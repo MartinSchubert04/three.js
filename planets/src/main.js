@@ -55,7 +55,7 @@ scene.add(pointLight);
 const controls = new OrbitControls(camera, renderer.domElement);
 
 // getStars(scene, 10000, 200, 500);
-getBackground(scene, "/assets/bg.png");
+getBackground(scene, "/assets/background/bg.png");
 
 
 const earthGroup = new THREE.Group();
