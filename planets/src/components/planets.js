@@ -1,10 +1,10 @@
 import * as THREE from "three";
 
 export function getPlanet({
-  scene,
-  texturePath,
-  normalPath,
   radius,
+  texturePath,
+  type,
+  normalPath = null,
   segments = 64,
   bumpScale = 1,
   clouding = false,
@@ -12,21 +12,32 @@ export function getPlanet({
   specularPath = null,
 }) {
   const planetTexture = new THREE.TextureLoader().load(texturePath);
-  const planetBump = new THREE.TextureLoader().load(normalPath);
+  if (normalPath) {
+    const planetBump = new THREE.TextureLoader().load(normalPath);
+  }
   // const specularMap = new THREE.TextureLoader().load(specularPath); // océanos brillantes
 
-  const planet = new THREE.Mesh(
-    new THREE.SphereGeometry(radius, segments, segments), // radio, segmentos ancho, segmentos alto
-    new THREE.MeshPhongMaterial({
-      map: planetTexture,
-      normalMap: planetBump,
-      bumpScale: bumpScale,
-      // specularMap: specularMap,
-      // specular: new THREE.Color(0x333333), // controla brillo especular
-    })
-  );
 
-  scene.add(planet);
+  let material;
+
+  if (type == "basic") {
+    material = new THREE.MeshBasicMaterial({
+      map: planetTexture,
+      color: 0xffffff,
+    });
+  }
+
+  if (type == "standard") {
+    material = new THREE.MeshStandardMaterial({
+      map: planetTexture,
+      color: 0xffffff,
+    });
+  }
+
+  const planet = new THREE.Mesh(
+    new THREE.SphereGeometry(radius, segments, segments), material
+    
+  );
 
   if (clouding == true) {
     const cloudMap = new THREE.TextureLoader().load(cloudPath);
@@ -38,9 +49,12 @@ export function getPlanet({
     });
 
     const clouds = new THREE.Mesh(
-      new THREE.SphereGeometry(202, 64, 64), // +2 de radio para que envuelva
+      new THREE.SphereGeometry(radius + 2, 64, 64), // +2 de radio para que envuelva
       cloudMaterial
     );
     scene.add(clouds);
   }
+
+
+  return planet;
 }
