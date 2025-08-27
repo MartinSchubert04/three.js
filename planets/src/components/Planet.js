@@ -38,7 +38,8 @@ export class Planet extends THREE.Group {
     } else {
       material = new THREE.MeshStandardMaterial({
         map: texture,
-        color: 0xffffff,
+        roughness: 0.7,  // Superficie más realista
+        metalness: 0.1,  // Menos metálico
       });
     }
 
