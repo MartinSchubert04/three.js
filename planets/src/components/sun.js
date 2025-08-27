@@ -1,8 +1,9 @@
 import * as THREE from "three";
 
-export class Planet {
+export class Planet extends THREE.Group {
   constructor({
-    radius = 10,
+    radius,
+    mass,
     segments = 64,
     texturePath,
     type = "standard",
@@ -10,7 +11,10 @@ export class Planet {
     rotationAxis = new THREE.Vector3(0, 1, 0),
     rotationSpeed = 0.01,
   }) {
+    super();
+
     this.radius = radius;
+    this.mass = mass;
     this.segments = segments;
     this.texturePath = texturePath;
     this.type = type;
@@ -43,6 +47,9 @@ export class Planet {
     );
 
     this.mesh.position.copy(this.position);
+
+    this.add(mesh); 
+    this.mesh = mesh; 
   }
 
   // Método para añadir a la escena

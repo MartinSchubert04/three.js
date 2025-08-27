@@ -2,7 +2,8 @@ import "./style.css";
 import { createStats } from "./components/viewStats.js";
 import { getStars } from "./components/Stars.js";
 import { getBackground } from "./components/background.js";
-import { getPlanet } from "./components/planets.js";
+
+import {Planet} from "./components/Planet.js";
 
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
@@ -24,33 +25,24 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
 
-camera.position.set(5, 5, 70);
+camera.position.set(0, 300, 500);
 
 renderer.render(scene, camera);
 
-const geometry = new THREE.TorusGeometry(10, 5, 16, 100);
-const material = new THREE.MeshStandardMaterial({});
-const torus = new THREE.Mesh(geometry, material);
-torus.position.set(20, 5, 5);
 
-const pointLight = new THREE.PointLight(0xffffff);
-// pointLight.position.set(10, 10, 10);
+const sunLight = new THREE.PointLight(0xffffff, 2, 2000);
+const ambientLight = new THREE.AmbientLight(0x404040, 0.5); // color, intensidad
 
-const ambienLight = new THREE.AmbientLight(0xffffff);
-// scene.add(ambienLight);
+//const direcLight = new THREE.DirectionalLight(0xffffff);
+//scene.add(direcLight);
+//direcLight.position.setX(-50)
 
-const direcLight = new THREE.DirectionalLight(0xffffff);
-scene.add(direcLight);
-direcLight.position.setX(-50)
-
-const lightHelper = new THREE.DirectionalLightHelper(direcLight);
+const lightHelper = new THREE.PointLightHelper(sunLight);
 scene.add(lightHelper);
 
-const gridHelper = new THREE.GridHelper(200, 50);
+const gridHelper = new THREE.GridHelper(1000, 50);
 scene.add(gridHelper);
 
-scene.add(torus);
-scene.add(pointLight);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 
@@ -58,50 +50,80 @@ const controls = new OrbitControls(camera, renderer.domElement);
 getBackground(scene, "/assets/background/bg.png");
 
 
-const earthGroup = new THREE.Group();
-const earth = getPlanet({
-  radius: 10,
-  texturePath: "/assets/earth/earthText.jpg",
-  type: "standard"
+
+const planetData = {
+  earth: {radius: 20, mass: 20, texturePath: "/assets/earth/earthText.jpg", position: new THREE.Vector3(300,150,0)},
+  mars: {radius: 10, mass: 10, texturePath: "/assets/mars/mars.jpg", position: new THREE.Vector3(500, -200, 0)},
+  sun: {radius: 100, mass: 200, texturePath: "/assets/sun/sunmap.jpg", position: new THREE.Vector3(0, 0, 0)}
+};
+
+
+
+const SolarSytem = new THREE.Group()
+
+const planets = {};
+for (const key in planetData) {
+  planets[key] = new Planet({
+    radius: planetData[key].radius,
+    mass: planetData[key].mass,
+    texturePath: planetData[key].texturePath,
+    position: planetData[key].position,
+    type: key === "sun" ? "basic" : "standard"
+  });
+
+  SolarSytem.add(planets[key])
+}
+
+planets.sun.add(sunLight)
+planets.earth.rotateZ(23.4 * Math.PI / 180);
+
+
+
+scene.add(SolarSytem, ambientLight)
+
+let prevTime = performance.now();
+const G = 2
+const timeScale = 600; 
+
+
+SolarSytem.children.forEach( planet => {
+  if (planet.setOrbitalSpeed && planet != planets.sun) {
+  planet.setOrbitalSpeed(planets.sun, G)
+  }
 });
-
-earthGroup.add(earth);
-scene.add(earthGroup);
-
-earthGroup.rotateZ(23.4 * Math.PI / 180);
-
-
-
-const sunGroup = new THREE.Group()
-
-
-const sun = getPlanet({
-  radius: 100,
-  texturePath: "/assets/sun/sunmap.jpg",
-  type: "basic"
-})
-
-
-sunGroup.add(sun);
-sunGroup.position.setX(-150);
-scene.add(sunGroup);
-
 
 
 function animate() {
   stats.begin(); // empieza medición
 
+  const currentTime = performance.now();
+  let dt = ((currentTime - prevTime) / 1000 ); // en segundos
+  prevTime = currentTime;
+
   requestAnimationFrame(animate);
 
-  torus.rotation.x += 0.001;
-  torus.rotation.y += 0.001;
-  torus.rotation.z += 0.001;
 
-  earthGroup.rotation.y += 0.01;
+  planets.earth.rotation.y += 0.01;
+
+  if (dt > 0.05) dt = 0.05;
+
+  // aplicar tu factor de aceleración del tiempo
+  const scaledDt = dt * timeScale;
+  
+  
+
+  // Rotaciones opcionales
+
+  SolarSytem.children.forEach( planet => {
+    if (planet.updatePhysics && planet != planets.sun) {
+      planet.updatePhysics(scaledDt, SolarSytem.children, G)
+    }
+  });
 
   controls.update();
 
   renderer.render(scene, camera);
+  
 
   stats.end(); // termina medición
 }
