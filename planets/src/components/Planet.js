@@ -1,91 +1,154 @@
 import * as THREE from "three";
+import { hashString } from "three/src/nodes/core/NodeUtils.js";
 
 export class Planet extends THREE.Group {
-  constructor({
-    radius = 10,
-    mass,
-    velocity = new THREE.Vector3(0,0,0),
-    segments = 64,
-    texturePath,
-    type = "standard",
-    position = new THREE.Vector3(0, 0, 0),
-    rotationAxis = new THREE.Vector3(0, 1, 0),
-    rotationSpeed = 0.01,
-  }) {
+	constructor({
+		radius = 10,
+		mass,
+		velocity = new THREE.Vector3(0, 0, 0),
+		segments = 64,
+		texturePath,
+		type = "standard",
+		position = new THREE.Vector3(0, 0, 0),
+		rotationAxis = new THREE.Vector3(0, 1, 0),
+		rotationSpeed = 0.01,
+		hasRings = false,
+	}) {
+		super();
 
-    super()
+		this.radius = radius;
+		this.mass = mass;
+		this.velocity = velocity;
+		this.segments = segments;
+		this.texturePath = texturePath;
+		this.type = type;
+		this.rotationAxis = rotationAxis;
+		this.rotationSpeed = rotationSpeed;
 
-    this.radius = radius;
-    this.mass = mass;
-    this.velocity = velocity;
-    this.segments = segments;
-    this.texturePath = texturePath;
-    this.type = type;
-    this.rotationAxis = rotationAxis;
-    this.rotationSpeed = rotationSpeed;
+		// Loader compartido
+		const textureLoader = new THREE.TextureLoader();
+		const texture = texturePath ? textureLoader.load(texturePath) : null;
 
-    // Loader compartido
-    const textureLoader = new THREE.TextureLoader();
-    const texture = texturePath ? textureLoader.load(texturePath) : null;
+		// Definir material
+		let material;
+		if (type === "basic") {
+			material = new THREE.MeshBasicMaterial({
+				map: texture,
+				color: 0xffffff,
+			});
+		} else {
+			material = new THREE.MeshStandardMaterial({
+				map: texture,
+				roughness: 0.7, // Superficie más realista
+				metalness: 0.1, // Menos metálico
+			});
+		}
 
-    // Definir material
-    let material;
-    if (type === "basic") {
-      material = new THREE.MeshBasicMaterial({
-        map: texture,
-        color: 0xffffff,
-      });
-    } else {
-      material = new THREE.MeshStandardMaterial({
-        map: texture,
-        roughness: 0.7,  // Superficie más realista
-        metalness: 0.1,  // Menos metálico
-      });
-    }
+		if (hasRings) {
+			this.addRings();
+		}
 
-    this.mesh = new THREE.Mesh(
-      new THREE.SphereGeometry(this.radius, this.segments, this.segments),
-      material
-    );
+		this.mesh = new THREE.Mesh(
+			new THREE.SphereGeometry(this.radius, this.segments, this.segments),
+			material
+		);
 
-    this.add(this.mesh);
+		this.mesh.castShadow = true;
+		this.mesh.receiveShadow = true;
 
-    this.position.copy(position);
-  }
+		this.add(this.mesh);
 
-  // Método para animar (rotación simple)
-  updateRotation() {
-    this.mesh.rotateOnAxis(this.rotationAxis, this.rotationSpeed);
-  }
+		this.position.copy(position);
+	}
 
-  updatePhysics(dt, attractors, G = 2) {
+	// Método para animar (rotación simple)
+	updateRotation() {
+		this.mesh.rotateOnAxis(this.rotationAxis, this.rotationSpeed);
+	}
 
-    attractors.forEach( attractor => {
+	updatePhysics(dt, attractors, G = 2) {
+		attractors.forEach((attractor) => {
+			if (attractor != this) {
+				const rVec = new THREE.Vector3().subVectors(
+					this.position,
+					attractor.position
+				);
+				const distance = rVec.length();
+				const force = rVec
+					.normalize()
+					.multiplyScalar(
+						(-G * attractor.mass * this.mass) /
+							(distance * distance)
+					);
+				// Aceleración y movimiento
+				const acc = force.clone().divideScalar(this.mass);
+				this.velocity.add(acc.multiplyScalar(dt));
+			}
+		});
 
-      if (attractor != this){
-        const rVec = new THREE.Vector3().subVectors(this.position, attractor.position);
-        const distance = rVec.length();
-        const force = rVec.normalize().multiplyScalar(-G * attractor.mass * this.mass / (distance*distance));
-      // Aceleración y movimiento
-        const acc = force.clone().divideScalar(this.mass);
-        this.velocity.add(acc.multiplyScalar(dt));
-      }
-    });
-    
-    this.position.add(this.velocity.clone().multiplyScalar(dt));
-  }
+		this.position.add(this.velocity.clone().multiplyScalar(dt));
+	}
 
-  calculateOrbitalSpeed(attractor, G) {
-    const distance = Math.sqrt((attractor.position.x - this.position.x)**2 + (attractor.position.y - this.position.y)**2);
-    const orbitalSpeed = Math.sqrt(G * attractor.mass / distance);
+	calculateOrbitalSpeed(attractor, G) {
+		const distance = Math.sqrt(
+			(attractor.position.x - this.position.x) ** 2 +
+				(attractor.position.y - this.position.y) ** 2
+		);
+		const orbitalSpeed = Math.sqrt((G * attractor.mass) / distance);
 
-    return orbitalSpeed
-  }
+		return orbitalSpeed;
+	}
 
-  setOrbitalSpeed(attractor, G, axis = new THREE.Vector3(0,1,0)) {
-    const speed = this.calculateOrbitalSpeed(attractor, G);
-    const rVec = new THREE.Vector3().subVectors(this.position, attractor.position).normalize();
-    // Crear vector perpendicular al radio para dirección de velocidad circular
-    this.velocity.copy(new THREE.Vector3().crossVectors(axis, rVec).normalize().multiplyScalar(speed));
-  }
+	setOrbitalSpeed(attractor, G, axis = new THREE.Vector3(0, 1, 0)) {
+		const speed = this.calculateOrbitalSpeed(attractor, G);
+		const rVec = new THREE.Vector3()
+			.subVectors(this.position, attractor.position)
+			.normalize();
+		// Crear vector perpendicular al radio para dirección de velocidad circular
+		this.velocity.copy(
+			new THREE.Vector3()
+				.crossVectors(axis, rVec)
+				.normalize()
+				.multiplyScalar(speed)
+		);
+	}
+
+	addRings() {
+		const textureLoader = new THREE.TextureLoader();
+		const ringTexture = textureLoader.load(
+			"/assets/saturn/saturnringcolor.jpg"
+		);
+
+		const ringGeometry = new THREE.RingGeometry(
+			this.radius * 1.5,
+			this.radius * 2.5,
+			32
+		);
+		const ringMaterial = new THREE.MeshLambertMaterial({
+			map: ringTexture,
+			transparent: true,
+			opacity: 0.7,
+			side: THREE.DoubleSide,
+		});
+
+		const pos = ringGeometry.attributes.position;
+		const uv = new Float32Array(pos.count * 2);
+
+		for (let i = 0; i < pos.count; i++) {
+			const x = pos.getX(i);
+			const y = pos.getY(i);
+			const r = Math.sqrt(x * x + y * y);
+
+			// Normalizar r al rango [0,1]
+			uv[i * 2] = r / (this.radius * 2.5);
+			uv[i * 2 + 1] = 0.5; // no nos importa el eje Y de la textura
+		}
+
+		ringGeometry.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+
+		const rings = new THREE.Mesh(ringGeometry, ringMaterial);
+		rings.rotation.x = Math.PI / 2;
+
+		this.add(rings);
+	}
 }
