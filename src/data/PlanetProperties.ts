@@ -9,10 +9,10 @@ export interface PlanetProperties {
 
 export class CloudProp implements PlanetProperties {
 	addProperty(planet: Planet): void {
-		if (!planet.cloudPath) return;
+		if (!(planet as any).cloudPath) return;
 
 		const cloudMat = textureManager.createMaterial(
-			planet.cloudPath,
+			(planet as any).cloudPath,
 			"standard",
 			0xffffff,
 			{ blending: THREE.AdditiveBlending }
@@ -47,10 +47,10 @@ export class GlowProp implements PlanetProperties {
 
 export class SpecularProp implements PlanetProperties {
 	addProperty(planet: Planet): void {
-		if (!planet.cloudPath) return;
+		if (!(planet as any)) return;
 
 		const specMat = textureManager.createMaterial(
-			planet.cloudPath,
+			(planet as any).cloudPath,
 			"standard",
 			0xffffff,
 			{ blending: THREE.AdditiveBlending }

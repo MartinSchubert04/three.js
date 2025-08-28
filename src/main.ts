@@ -1,17 +1,15 @@
 import "./style.css";
-import { createStats } from "./utils/viewStats.js";
-import { getStars } from "./objects/Stars.js";
-import { getBackground } from "./objects/background.js";
-import { planetData } from "./data/Data.js";
+import { createStats } from "./utils/viewStats";
+import { getStars } from "./objects/Stars";
+import { getBackground } from "./objects/Background";
+import { planetData } from "./data/Data";
 import { Planet } from "./objects/Planet.ts";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
-// 🟢 Stats.js
 const stats = createStats();
 const scene = new THREE.Scene();
 
-// 🟢 Cámara
 const camera = new THREE.PerspectiveCamera(
 	75,
 	window.innerWidth / window.innerHeight,
@@ -20,7 +18,6 @@ const camera = new THREE.PerspectiveCamera(
 );
 camera.position.set(0, 300, 500);
 
-// 🟢 Renderer
 const renderer = new THREE.WebGLRenderer({
 	canvas: document.querySelector<HTMLCanvasElement>("#bg")!,
 });
@@ -29,7 +26,6 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-// 🟢 Luces
 const sunLight = new THREE.PointLight(0xffffff, 100000);
 const lightHelper = new THREE.PointLightHelper(sunLight);
 scene.add(lightHelper);
@@ -37,13 +33,11 @@ scene.add(lightHelper);
 const gridHelper = new THREE.GridHelper(1000, 50);
 scene.add(gridHelper);
 
-// 🟢 OrbitControls
 const controls = new OrbitControls(camera, renderer.domElement);
 
 // getStars(scene, 10000, 200, 500);
 getBackground(scene, "/assets/background/black.png");
 
-// 🟢 Sistema Solar
 const SolarSytem = new THREE.Group();
 
 const planets: Record<string, Planet> = {};
@@ -60,7 +54,6 @@ for (const key in planetData) {
 	SolarSytem.add(planets[key]);
 }
 
-// 🟢 Luces nocturnas en la Tierra
 const lightText = new THREE.TextureLoader().load(
 	"/assets/earth/earthLights.jpg"
 );
@@ -81,7 +74,6 @@ planets.earth.rotateZ((23.4 * Math.PI) / 180);
 // Añadir al sistema solar
 scene.add(SolarSytem, sunLight);
 
-// 🟢 Variables de simulación
 let prevTime = performance.now();
 let G = 2;
 let timeScale = 1;
@@ -101,7 +93,6 @@ SolarSytem.children.forEach((planet) => {
 	}
 });
 
-// 🟢 UI de controles
 function setupControls() {
 	document.getElementById("timeScale")?.addEventListener("input", (e) => {
 		const target = e.target as HTMLInputElement;
@@ -117,7 +108,6 @@ function setupControls() {
 }
 setupControls();
 
-// 🟢 Loop de animación
 function animate() {
 	stats.begin();
 
