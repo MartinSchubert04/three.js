@@ -3,7 +3,6 @@ import { createStats } from "./components/viewStats.js";
 import { getStars } from "./components/Stars.js";
 import { getBackground } from "./components/background.js";
 import { planetData } from "./components/Data.js";
-
 import { Planet } from "./components/Planet.js";
 
 import * as THREE from "three";
@@ -13,14 +12,16 @@ const stats = createStats();
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(
-	75,
-	window.innerWidth / window.innerHeight,
-	0.1,
-	10000
+  75,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  10000
 );
 
+camera.position.set(5, 5, 150);
+
 const renderer = new THREE.WebGLRenderer({
-	canvas: document.querySelector("#bg"),
+  canvas: document.querySelector("#bg"),
 });
 
 renderer.setPixelRatio(window.devicePixelRatio);
@@ -32,12 +33,9 @@ renderer.render(scene, camera);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-const sunLight = new THREE.PointLight(0xffffff, 2, 4000);
-sunLight.castShadow = true;
-sunLight.shadow.mapSize.width = 2048;
-sunLight.shadow.mapSize.height = 2048;
+const sunLight = new THREE.PointLight(0xffffff, 100000);
 
-const ambientLight = new THREE.AmbientLight(/*0x404040*/ 0xffffff, 1); // color, intensidad
+// const ambientLight = new THREE.AmbientLight(/*0x404040*/ 0xffffff, 1); // color, intensidad
 
 //const direcLight = new THREE.DirectionalLight(0xffffff);
 //scene.add(direcLight);
@@ -58,92 +56,110 @@ const SolarSytem = new THREE.Group();
 
 const planets = {};
 for (const key in planetData) {
-	planets[key] = new Planet({
-		radius: planetData[key].radius,
-		mass: planetData[key].mass,
-		texturePath: planetData[key].texturePath,
-		position: planetData[key].position,
-		type: key === "sun" ? "basic" : "standard",
-		hasRings: planetData[key].hasRings || false,
-	});
+  planets[key] = new Planet({
+    radius: planetData[key].radius,
+    mass: planetData[key].mass,
+    texturePath: planetData[key].texturePath,
+    position: planetData[key].position,
+    type: key === "sun" ? "basic" : "standard",
+    hasRings: planetData[key].hasRings || false,
+  });
 
-	SolarSytem.add(planets[key]);
+  SolarSytem.add(planets[key]);
 }
+
+const lightText = new THREE.TextureLoader().load(
+  "/assets/earth/earthLights.jpg"
+);
+const earthLightMat = new THREE.MeshBasicMaterial({
+  map: lightText,
+  blending: THREE.AdditiveBlending,
+  opacity: 0.8,
+});
+
+const earthLight = new THREE.Mesh(
+  new THREE.IcosahedronGeometry(planets.earth.radius, planets.earth.segments),
+  earthLightMat
+);
+// CLOUDS
+// const cloudText = new THREE.TextureLoader().load(
+//   "/assets/earth/earthCloudMap.jpg"
+// );
+// const cloudMat = new THREE.MeshStandardMaterial({
+//   map: cloudText,
+//   blending: THREE.AdditiveBlending,
+// });
+
+// const earthCloud = new THREE.Mesh(
+//   new THREE.IcosahedronGeometry(planets.earth.radius, planets.earth.segments),
+//   cloudMat
+// );
+
+planets.earth.add(earthLight);
 
 planets.earth.rotateZ((23.4 * Math.PI) / 180);
 
-scene.add(SolarSytem, ambientLight, sunLight);
+scene.add(SolarSytem, sunLight);
 
 let prevTime = performance.now();
 const G = 2;
-const timeScale = 20;
+const timeScale = 1;
 
 SolarSytem.children.forEach((planet) => {
-	if (
-		planet.setOrbitalSpeed &&
-		planet != planets.sun &&
-		planet != planets.moon
-	) {
-		planet.setOrbitalSpeed(planets.sun, G);
-	}
-	if (planet == planets.moon) {
-		planet.setOrbitalSpeed(planets.earth, G);
-	}
+  if (
+    planet.setOrbitalSpeed &&
+    planet != planets.sun &&
+    planet != planets.moon
+  ) {
+    planet.setOrbitalSpeed(planets.sun, G);
+  }
+  if (planet == planets.moon) {
+    planet.setOrbitalSpeed(planets.earth, G);
+  }
 });
 
-getStars(5000);
-
-sunLight.castShadow = true;
-planets.earth.castShadow = true;
-planets.earth.receiveShadow = true;
-renderer.shadowMap.enabled = true;
-
 function animate() {
-	stats.begin(); // empieza medición
+  stats.begin(); // empieza medición
 
-	const currentTime = performance.now();
-	let dt = (currentTime - prevTime) / 1000; // en segundos
-	prevTime = currentTime;
+  const currentTime = performance.now();
+  let dt = (currentTime - prevTime) / 1000; // en segundos
+  prevTime = currentTime;
 
-	requestAnimationFrame(animate);
+  requestAnimationFrame(animate);
 
-	planets.earth.rotation.y += 0.01;
+  planets.earth.rotation.y += 0.01;
 
-	if (dt > 0.05) dt = 0.05;
+  if (dt > 0.05) dt = 0.05;
 
-	// aplicar tu factor de aceleración del tiempo
-	const scaledDt = dt * timeScale;
+  // aplicar tu factor de aceleración del tiempo
+  const scaledDt = dt * timeScale;
 
-	// Rotaciones opcionales
+  // Rotaciones opcionales
 
-	SolarSytem.children.forEach((planet) => {
-		if (
-			planet.updatePhysics &&
-			planet != planets.sun &&
-			planet != planets.moon
-		) {
-			planet.updatePhysics(
-				scaledDt,
-				/*SolarSytem.children*/ [planets.sun],
-				G
-			);
-		}
-		if (planet == planets.moon) {
-			planet.updatePhysics(scaledDt, [planets.earth], G);
-		}
-	});
+  SolarSytem.children.forEach((planet) => {
+    if (
+      planet.updatePhysics &&
+      planet != planets.sun &&
+      planet != planets.moon
+    ) {
+      planet.updatePhysics(scaledDt, /*SolarSytem.children*/ [planets.sun], G);
+    }
+    if (planet == planets.moon) {
+      planet.updatePhysics(scaledDt, [planets.earth], G);
+    }
+  });
 
-	controls.update();
+  controls.update();
 
-	renderer.render(scene, camera);
+  renderer.render(scene, camera);
 
-	stats.end(); // termina medición
+  stats.end(); // termina medición
 
-	window.addEventListener("resize", () => {
-		camera.aspect = window.innerWidth / window.innerHeight;
-		camera.updateProjectionMatrix();
-		renderer.setSize(window.innerWidth, window.innerHeight);
-	});
+  window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
 }
 
 animate();
