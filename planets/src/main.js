@@ -18,8 +18,6 @@ const camera = new THREE.PerspectiveCamera(
   10000
 );
 
-camera.position.set(5, 5, 150);
-
 const renderer = new THREE.WebGLRenderer({
   canvas: document.querySelector("#bg"),
 });
@@ -102,8 +100,8 @@ planets.earth.rotateZ((23.4 * Math.PI) / 180);
 scene.add(SolarSytem, sunLight);
 
 let prevTime = performance.now();
-const G = 2;
-const timeScale = 1;
+let G = 2;
+let timeScale = 1;
 
 SolarSytem.children.forEach((planet) => {
   if (
@@ -118,6 +116,18 @@ SolarSytem.children.forEach((planet) => {
   }
 });
 
+function setupControls() {
+  document.getElementById("timeScale").addEventListener("input", (e) => {
+    timeScale = parseFloat(e.target.value);
+    document.getElementById("timeValue").textContent = timeScale + "x";
+  });
+
+  document.getElementById("gravity").addEventListener("input", (e) => {
+    G = parseFloat(e.target.value);
+    document.getElementById("gravityValue").textContent = G;
+  });
+}
+setupControls();
 function animate() {
   stats.begin(); // empieza medición
 
