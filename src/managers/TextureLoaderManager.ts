@@ -1,7 +1,5 @@
 import * as THREE from "three";
 
-type MaterialType = "basic" | "standard";
-
 interface MaterialOptions {
 	roughness?: number;
 	metalness?: number;
@@ -39,7 +37,7 @@ export class TextureLoaderManager {
 	 */
 	createMaterial(
 		path: string,
-		type: MaterialType = "standard",
+		type: string = "standard",
 		color: number = 0xffffff,
 		options: MaterialOptions = {}
 	): THREE.Material {

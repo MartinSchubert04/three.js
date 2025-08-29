@@ -1,34 +1,37 @@
 import * as THREE from "three";
 import { TextureLoaderManager } from "../managers/TextureLoaderManager.ts";
-
-// Definimos la interfaz para los parámetros del constructor
-interface PlanetOptions {
-	radius?: number;
-	mass: number;
-	velocity?: THREE.Vector3;
-	segments?: number;
-	texturePath: string;
-	type?: "basic" | "standard";
-	position?: THREE.Vector3;
-	rotationAxis?: THREE.Vector3;
-	rotationSpeed?: number;
-	hasRings?: boolean;
-	properties?: { addProperty: (planet: Planet) => void }[];
-}
+import type { PlanetProperties } from "../data/PlanetProperties.ts";
 
 const textHandler = new TextureLoaderManager();
 
+interface PlanetOptions {
+	radius: number;
+	mass: number;
+	velocity?: THREE.Vector3;
+	segments?: number;
+	texturePath?: string;
+	type?: string;
+	position?: THREE.Vector3;
+	initialPosition?: THREE.Vector3;
+	rotationAxis?: THREE.Vector3;
+	rotationSpeed?: number;
+	hasRings?: boolean;
+	properties?: any[];
+}
+
 export class Planet extends THREE.Group {
+	mesh: THREE.Mesh;
 	radius: number;
 	mass: number;
 	velocity: THREE.Vector3;
 	segments: number;
-	texturePath: string;
-	type: "basic" | "standard";
+	texturePath?: string;
+	type: string;
+	position: THREE.Vector3;
 	rotationAxis: THREE.Vector3;
 	rotationSpeed: number;
-	properties: { addProperty: (planet: Planet) => void }[];
-	mesh: THREE.Mesh;
+	hasRings: boolean;
+	properties: PlanetProperties[];
 
 	constructor({
 		radius = 10,
@@ -51,15 +54,19 @@ export class Planet extends THREE.Group {
 		this.segments = segments;
 		this.texturePath = texturePath;
 		this.type = type;
+		this.position = position;
 		this.rotationAxis = rotationAxis;
 		this.rotationSpeed = rotationSpeed;
+		this.hasRings = hasRings;
 		this.properties = properties;
 
 		const material = textHandler.createMaterial(texturePath, type);
 
+		/*
 		this.properties.forEach((prop) => {
 			prop.addProperty(this);
 		});
+		*/
 
 		if (hasRings) {
 			this.addRings();

@@ -7,6 +7,8 @@ import { Planet } from "./objects/Planet.ts";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
+import { App } from "./core/App";
+/*
 const stats = createStats();
 const scene = new THREE.Scene();
 
@@ -36,7 +38,6 @@ scene.add(gridHelper);
 const controls = new OrbitControls(camera, renderer.domElement);
 
 // getStars(scene, 10000, 200, 500);
-getBackground(scene, "/assets/background/black.png");
 
 const SolarSytem = new THREE.Group();
 
@@ -147,3 +148,8 @@ function animate() {
 }
 
 animate();
+*/
+
+const Application = new App();
+
+Application.run();

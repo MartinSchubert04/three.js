@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-export function getBackground(scene: THREE.Scene, backgroundImg: string) {
+export function getBackground(backgroundImg: string) {
 	const texture = new THREE.TextureLoader().load(backgroundImg);
 
 	const geometry = new THREE.SphereGeometry(1000, 60, 40);
@@ -10,6 +10,5 @@ export function getBackground(scene: THREE.Scene, backgroundImg: string) {
 		side: THREE.BackSide, // suficiente para ver la textura interna
 	});
 
-	const backgroundMesh = new THREE.Mesh(geometry, material);
-	scene.add(backgroundMesh);
+	return new THREE.Mesh(geometry, material);
 }
